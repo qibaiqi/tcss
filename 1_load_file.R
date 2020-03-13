@@ -45,23 +45,22 @@ get_parents <- function(start, end) {
 parents <- mapply(get_parents, loca_s, loca_d)
 names(parents) <- id
 
+#parents累加形成ancestors
 
-#term与gene的关联信息文件
-ff <- readLines("gene_association.sgd")
-ff <- ff[-c(1:28)]## 去掉前几行介绍信息
-ff <- strsplit(ff, split = "\t")
-ff <- t(as.data.frame(ff))## 变成了matrix
-gene_term <- data.frame(gene = ff[, 2], term = ff[, 5], stringsAsFactors = F)
-
-#提取term的注释信息：gene列表
-get_anno <- function(term, pool) {
-  genes <- pool[pool$term == term, ]
-  genes <- unique(genes$gene)
-  return(genes)
+depth_search <- function(term, pool) {
+  items <- pool[[term]]
+  new_items <- unlist(lapply(items, function(e) pool[[e]]))
+  items <- unique(c(new_items, items))
+  if (!is.null(new_items)) {
+    new_items <- unlist(lapply(new_items, depth_search, pool))
+    items <- unique(c(new_items, items))
+  }
+  items <- c(items, term)#包括其本身
+  return(items)
 }
 
-annotations <- lapply(node_bp, get_anno, gene_term)
-names(annotations) <- node_bp
+ancestors <- lapply(id, depth_search, parents)
+names(ancestors) <- id
 
 
 #根据变量parents反向形成children
@@ -78,3 +77,36 @@ get_children <- function(term, pool) {
 
 children <- lapply(id, get_children, flip)
 names(children) <- id
+
+offsping <- lapply(id, depth_search, children)
+names(offsping) <- id
+
+#term与gene的关联信息文件
+ff <- readLines("gene_association.sgd")
+ff <- ff[-c(1:28)]## 去掉前几行介绍信息
+ff <- strsplit(ff, split = "\t")
+ff <- t(as.data.frame(ff))## 变成了matrix
+gene_term <- data.frame(gene = ff[, 2], term = ff[, 5], stringsAsFactors = F)
+
+#提取term的注释信息：gene列表
+get_anno <- function(term, pool) {
+  genes <- pool[pool$term == term, ]
+  genes <- unique(genes$gene)
+  return(genes)
+}
+
+init_annotations <- lapply(node_bp, get_anno, gene_term)
+names(init_annotations) <- node_bp
+
+#annotations信息的合并
+
+anno_add <- function(term) {
+  off_list <- offsping[[term]]
+  anno_list <- lapply(off_list, function(e) init_annotations[[e]])
+  anno_list <- c(unlist(anno_list), init_annotations[[term]])
+  anno_list <- unique(anno_list)
+  return(anno_list)
+}
+
+final_annotations <- lapply(node_bp, anno_add)
+names(final_annotations) <- node_bp
