@@ -121,6 +121,3 @@ anno_add <- function(term) {
 #最终的annotations
 final_annotations <- lapply(node_bp, anno_add)
 names(final_annotations) <- node_bp
-
-#下一步的小小检验
-#length(node_bp) - length(which(lapply(final_annotations, length) == 0))
