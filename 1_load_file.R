@@ -63,8 +63,8 @@ depth_search <- function(term, pool) {
   return(items)
 }
 
-ancestors <- lapply(id, depth_search, parents)
-names(ancestors) <- id
+ancestors <- lapply(node_bp, depth_search, parents)
+names(ancestors) <- node_bp
 
 
 #根据变量parents反向形成children
@@ -81,12 +81,12 @@ get_children <- function(term, pool) {
   return(children)
 }
 
-children <- lapply(id, get_children, flip)
-names(children) <- id
+children <- lapply(node_bp, get_children, flip)
+names(children) <- node_bp
 
 #children的所有children...迭代得到 offspring
-offspring <- lapply(id, depth_search, children)
-names(offspring) <- id
+offspring <- lapply(node_bp, depth_search, children)
+names(offspring) <- node_bp
 
 #源数据二
 #term与gene的关联信息文件
@@ -121,3 +121,37 @@ anno_add <- function(term) {
 #最终的annotations
 final_annotations <- lapply(node_bp, anno_add)
 names(final_annotations) <- node_bp
+
+#从parents,children,ancestor,offspring,final_annotations
+#中去掉注释为空的的term, delete
+
+#final_annotations
+dele_loca <- which(lapply(final_annotations, length) == 0)
+node_remove <- node_bp[dele_loca]
+
+final_annotations <- final_annotations[-dele_loca]
+
+
+#以变量为对象，这样才能持续的改变变量
+#delete_inside是从list的各个字符串中删除这些节点
+delete_inside <- function(term_set, node_remove) {
+  cut_terms <- intersect(term_set, node_remove)
+  if (length(cut_terms) != 0) {
+    term_set <- setdiff(term_set, cut_terms)
+    return(term_set)
+  }else{
+    return(term_set)
+  }
+}
+
+#children
+children <- lapply(children, delete_inside, node_remove)
+children[node_remove] <- NULL
+
+#ancestors
+ancestors <- lapply(ancestors, delete_inside, node_remove)
+ancestors[node_remove] <- NULL
+
+#offspring
+offspring <- lapply(offspring, delete_inside, node_remove)
+offspring[node_remove] <- NULL
