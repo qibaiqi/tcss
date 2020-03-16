@@ -155,3 +155,5 @@ ancestors[node_remove] <- NULL
 #offspring
 offspring <- lapply(offspring, delete_inside, node_remove)
 offspring[node_remove] <- NULL
+
+source("test_load_file.R")
