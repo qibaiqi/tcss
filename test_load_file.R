@@ -1,5 +1,4 @@
 #包testthat
-#library("testthat")
 
 #通过源文件检索
 test_that(
@@ -25,7 +24,7 @@ test_that(
   "ancestors", {
     tmp_1 <- ancestors[["GO:0000183"]]
     tmp_1 <- tmp_1[order(tmp_1)]
-    expect_equal(tmp_1, 
+    expect_equal(tmp_1,
                  c("GO:0000183", "GO:0006139", "GO:0006342", "GO:0006350",
                    "GO:0006351", "GO:0006355", "GO:0006807", "GO:0008150",
                    "GO:0008152", "GO:0009058", "GO:0009059", "GO:0009889",
