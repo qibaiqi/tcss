@@ -7,28 +7,29 @@ nodes <- names(offspring)#取所有节点，3488个
 get_log <- function(item1, item2) {
   len1 <- length(item1)
   len2 <- length(item2)
-  return(-log10(len1/len2))
+  return(-log10(len1 / len2))
 }
 
 #计算ict值
 ict <- lapply(offspring, get_log, offspring)
-ict <- lapply(children, get_log, children)
 names(ict) <- nodes
 
 #取经阈值删选过后的ict
-nodes_cutoff <- ict[which(ict <= cutoff)]
+nodes_cutoff <- names(ict[which(ict <= cutoff)])
 
 #另存为data.frame格式，便于操作
-meta_terms <- data.frame(id = names(nodes_cutoff),
-                         ict = unlist(unname(nodes_cutoff)),
-                         stringsAsFactors = FALSE)
+meta_terms <- data.frame(id = nodes_cutoff,
+            ict = unlist(lapply(nodes_cutoff, function(e) ict[[e]])),
+            stringsAsFactors = FALSE)
 
-#ciduanwuyong？？？
+#以每个term的offspring作为meta_terms的内容
+meta_terms$terms <- lapply(nodes_cutoff, function(e) offspring[[e]])
+
 #get_comparision用于比较两个term的ict值是否close
 get_comparision <- function(term2, term1) {
   ict1 <- ict[[term1]]
   ict2 <- ict[[term2]]
-  if (ict2 != 0 & ict1/ict2 < 1.2) {
+  if (ict2 != 0 & ict1 / ict2 < 1.2) {
     return(TRUE)
   }else {
     return(FALSE)
@@ -37,7 +38,11 @@ get_comparision <- function(term2, term1) {
 
 #If the ict values of parent - child terms is
 #in close proximity of each other then the child term is removed.
-#但是就这样直接删除，不需要合并吗？不然一些node没有了对应的root节点
+#但是直接删除，不需要合并吗？
+#一些node没有了对应的root节点
+#remove_close_terms：如果对term1来说，
+#存在其他root-node判定为close，
+#去除term1
 remove_close_terms <- function(term, all_nodes) {
   terms2 <- intersect(parents[[term]], all_nodes)
   if (!is.null(terms2)) {
@@ -54,9 +59,10 @@ remove_close_terms <- function(term, all_nodes) {
 remove_terms <- lapply(meta_terms$id, remove_close_terms, meta_terms$id)
 meta_terms <- meta_terms[-which(unlist(remove_terms) %in% meta_terms$id), ]
 
-#以每个term的children作为meta_terms的内容
-meta_terms$terms <- lapply(meta_terms$id, function(e) children[[e]])
-
+#加上总的cluster meta，meta里的node即为所有的root-node
+meta_terms <- rbind(meta_terms, c(id = "meta", ict = NA, terms = NA))
+tmp <- list(setdiff(meta_terms$id, "meta"))
+meta_terms[meta_terms$id == "meta", ]$terms <- tmp
 
 #if edges a->b->c and a->c exist then a->c is removed.
 #此段没有运行!!! 还不是很确定
@@ -71,8 +77,6 @@ meta_terms$terms <- lapply(meta_terms$id, function(e) children[[e]])
 #  }
 #  }))
 #}
-
-
 
 #remove_unwanted 对所有的meta_terms一个个检查，看“他们之间”是否存在上述情况
 #若有，需从parents,children(??)中删去那些meta_terms
@@ -91,19 +95,16 @@ meta_terms$terms <- lapply(meta_terms$id, function(e) children[[e]])
 
 #lapply(meta_terms$id, remove_unwanted, meta_terms$id)
 
-#clustering and calculate ICA
-#go_annotations
-#[cluster]:[clusid][ancestors][ICA]
 
+#返回该term所属的cluster，要么是meta，要么是某个root-node
 get_cluster <- function(term, meta_terms) {
-  if (term %in% meta_terms$id) {
-    return(c("meta"))
-  }else {
     t <- lapply(meta_terms$terms, function(e) if (term %in% e) TRUE else FALSE)
     clust <- meta_terms$id[which(t == TRUE)]
     return(clust)
-  }
 }
 
-term_cluster <- data.frame(term = nodes)
+#term_cluster有两列：term，clusid（是list）
+term_cluster <- data.frame(term = nodes, stringsAsFactors = FALSE)
 term_cluster$clusid <- lapply(nodes, get_cluster, meta_terms)
+
+source("3_cluster.R")
