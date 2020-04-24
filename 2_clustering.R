@@ -11,100 +11,65 @@ get_log <- function(item1, item2) {
 }
 
 #计算ict值
-ict <- lapply(offspring, get_log, offspring)
+ict <- lapply(offspring, get_log, nodes)
 names(ict) <- nodes
 
 #取经阈值删选过后的ict
-nodes_cutoff <- names(ict[which(ict <= cutoff)])
-
-#另存为data.frame格式，便于操作
-meta_terms <- data.frame(id = nodes_cutoff,
-            ict = unlist(lapply(nodes_cutoff, function(e) ict[[e]])),
-            stringsAsFactors = FALSE)
-
-#以每个term的offspring作为meta_terms的内容
-meta_terms$terms <- lapply(nodes_cutoff, function(e) offspring[[e]])
+nodes_cutoff <- names(ict[which(ict <= cutoff)])#2439个
 
 #get_comparision用于比较两个term的ict值是否close
-get_comparision <- function(term2, term1) {
-  ict1 <- ict[[term1]]
-  ict2 <- ict[[term2]]
-  if (ict2 != 0 & ict1 / ict2 < 1.2) {
-    return(TRUE)
-  }else {
-    return(FALSE)
-  }
-}
-
-#If the ict values of parent - child terms is
-#in close proximity of each other then the child term is removed.
-#但是直接删除，不需要合并吗？
-#一些node没有了对应的root节点
-#remove_close_terms：如果对term1来说，
-#存在其他root-node判定为close，
-#去除term1
-remove_close_terms <- function(term, all_nodes) {
-  terms2 <- intersect(parents[[term]], all_nodes)
-  if (!is.null(terms2)) {
-    result <- lapply(terms2, get_comparision, term)
-    if ("TRUE" %in% result) {
-      return(NULL)
-    }else{
-      return(term)
+meta_terms <- nodes_cutoff
+for (term1 in meta_terms) {
+  terms <- intersect(parents[[term1]], nodes_cutoff)
+  for (term2 in terms) {
+    if (ict[[term2]] != 0 & ict[[term1]] / ict[[term2]] <= 1.2) {
+      loca <- charmatch(term1, meta_terms)
+      meta_terms <- meta_terms[-loca]
+      break
     }
   }
 }
 
-#从meta_terms中删除那些判定为close的term
-remove_terms <- lapply(meta_terms$id, remove_close_terms, meta_terms$id)
-meta_terms <- meta_terms[-which(unlist(remove_terms) %in% meta_terms$id), ]
+#另存为data.frame格式，便于操作
+meta_graph <- data.frame(id = meta_terms,
+            ict = unlist(lapply(meta_terms, function(e) ict[[e]])),
+            stringsAsFactors = FALSE)
+
+#以每个term的offspring作为meta_terms的内容，组成sub-graph
+#每个sub-graph去掉来自其他sub-graph的信息：后代节点
+remove_dup <- function(id, meta_graph) {
+  terms <- offspring[[id]]
+  remove <- intersect(terms, meta_graph$id)
+  remove <- setdiff(remove, id)
+  remove_off <- unlist(lapply(remove, function(e) offspring[[e]]))
+  terms <- setdiff(terms, remove_off)
+  return(terms)
+}
+
+#meta_graph有三列，id，ict，terms
+#另存为data.frame格式，便于操作
+meta_graph <- data.frame(id = meta_terms,
+                      ict = unlist(lapply(meta_terms, function(e) ict[[e]])),
+                      terms = I(lapply(meta_graph$id, remove_dup, meta_graph)),
+                      stringsAsFactors = FALSE)
+
 
 #加上总的cluster meta，meta里的node即为所有的root-node
-meta_terms <- rbind(meta_terms, c(id = "meta", ict = NA, terms = NA))
-tmp <- list(setdiff(meta_terms$id, "meta"))
-meta_terms[meta_terms$id == "meta", ]$terms <- tmp
-
-#if edges a->b->c and a->c exist then a->c is removed.
-#此段没有运行!!! 还不是很确定
-#get_relation中 term1是 a, all_node 是 b,c,d,,,判断是否存在上述情况
-#get_relation <- function(term1, all_node) {
-#  unlist(lapply(all_node, function(term2) {
-#  if (term1 != term2 & term2 %in% offspring[[term1]]) {
-#    #确定是offspring吗？
-#    return(term2)
-#  }else{
-#    return(NULL)
-#  }
-#  }))
-#}
-
-#remove_unwanted 对所有的meta_terms一个个检查，看“他们之间”是否存在上述情况
-#若有，需从parents,children(??)中删去那些meta_terms
-#remove_unwanted <- function(item, all_node) {
-#  child <- children[[item]]
-#  child_meta <- intersect(child, all_node)
-#  remove_term <- unlist(lapply(child_meta, get_relation, child_meta))
-#  if (!is.null(remove_term)) {
-#    return(remove_term)
-#    children[[item]] <- setdiff(children[[item]], remove_term)
-#    for (rt in remove_term) {
-#      parents[[rt]] <- setdiff(parents[[rt]], item)
-#    }
-#  } 
-#}
-
-#lapply(meta_terms$id, remove_unwanted, meta_terms$id)
+meta_graph <- rbind(meta_graph, c(id = "meta", ict = NA, terms = NA))
+tmp <- list(setdiff(meta_graph$id, "meta"))
+meta_graph[meta_graph$id == "meta", ]$terms <- tmp
 
 
 #返回该term所属的cluster，要么是meta，要么是某个root-node
-get_cluster <- function(term, meta_terms) {
-    t <- lapply(meta_terms$terms, function(e) if (term %in% e) TRUE else FALSE)
-    clust <- meta_terms$id[which(t == TRUE)]
+get_cluster <- function(term, meta_graph) {
+    t <- lapply(meta_graph$terms, function(e) if (term %in% e) TRUE else FALSE)
+    clust <- meta_graph$id[which(t == TRUE)]
     return(clust)
 }
 
 #term_cluster有两列：term，clusid（是list）
-term_cluster <- data.frame(term = nodes, stringsAsFactors = FALSE)
-term_cluster$clusid <- lapply(nodes, get_cluster, meta_terms)
+term_cluster <- data.frame(id = nodes,
+                           clusid = I(lapply(nodes, get_cluster, meta_graph)),
+                           stringsAsFactors = FALSE)
 
 source("3_cluster.R")

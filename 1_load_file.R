@@ -98,8 +98,8 @@ ff <- t(as.data.frame(ff))## 变成了matrix
 gene_term <- data.frame(gene = ff[, 2], term = ff[, 5], stringsAsFactors = F)
 
 #提取term的注释信息：gene列表
-get_anno <- function(term, pool) {
-  genes <- pool[pool$term == term, ]
+get_anno <- function(term, gene_term) {
+  genes <- gene_term[gene_term$term == term, ]
   genes <- unique(genes$gene)
   return(genes)
 }
@@ -110,7 +110,7 @@ names(init_annotations) <- node_bp
 
 #annotations信息的合并
 #将该term的所有后代(offspring)的注释信息全都加到自己身上
-anno_add <- function(term) {
+anno_add <- function(term, offspring, init_annotations) {
   off_list <- offspring[[term]]
   anno_list <- lapply(off_list, function(e) init_annotations[[e]])
   anno_list <- c(unlist(anno_list), init_annotations[[term]])
@@ -119,7 +119,7 @@ anno_add <- function(term) {
 }
 
 #最终的annotations
-final_annotations <- lapply(node_bp, anno_add)
+final_annotations <- lapply(node_bp, anno_add, offspring, init_annotations)
 names(final_annotations) <- node_bp
 
 #从parents,children,ancestor,offspring,final_annotations
