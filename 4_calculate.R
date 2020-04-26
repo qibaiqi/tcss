@@ -27,10 +27,12 @@ get_lca <- function(clus1, clus2, term1, term2) {
     common_anc <- intersect(anc1, anc2)
     value <- unlist(lapply(common_anc, get_com_anc_ica, clus1))
   }else if (clus1 != "meta" & clus2 != "meta" & clus1 != clus2) {
-    anc1 <- get_clus_ancestors("meta", term1)
-    anc2 <- get_clus_ancestors("meta", term2)
+    anc1 <- get_clus_ancestors("meta", clus1)
+    anc2 <- get_clus_ancestors("meta", clus2)
     common_anc <- intersect(anc1, anc2)
     value <- unlist(lapply(common_anc, get_com_anc_ica, "meta"))
+  }else {
+    value <- NULL #我自己加上的，因为逻辑有空隙
   }
   return(value)
 }
