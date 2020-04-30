@@ -30,7 +30,7 @@ loca_d <- c(rep(loca_s, 1), length(rr))[-1]#每个term的信息结束的行数
 #提取term的parent列表
 #get_parent处理一行(one line)的信息
 get_parent <- function(line) {
-  if (grepl("is_a", line) | grepl("relationship", line)) {
+  if (grepl("is_a:", line) | grepl("relationship:", line)) {
     parent <- sub(".*(GO:(\\d+)).*", "\\1", line)
     return(parent)
   }else {
