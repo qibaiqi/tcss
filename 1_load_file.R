@@ -1,4 +1,4 @@
-setwd("D:/Pictures/important files/2020_stay_at_home/git_tcss/")
+setwd("D:/study/Yu/2020_stay_at_home/git_tcss/")
 
 #本文件旨在处理两份源文件，第一份得到GO数据库所有term之间的父子关系，
 #并整理为children, parents, ancestors, offspring四种，第二份源文件，
