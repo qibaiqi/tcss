@@ -36,8 +36,9 @@ get_clus_ica <- function(term,
     #该term所属的所有clusters
     own_ica <- get_log(annotations[[term]], annotations[["GO:0008150"]])
     #本身原本的ica值
-    clus_max_ica <- lapply(clusid_list,
-                         function(e) graph[graph$id == e, ]$max_ica)
+    clus_max_ica <- lapply(clusid_list,function(e){
+        graph[graph$id == e, ]$max_ica
+    })
     #所有cluster的max_ica
     clus_ica <- lapply(unlist(clus_max_ica), function(e) own_ica / e)
     #本身的ica除以每个cluster的max_ica
@@ -73,4 +74,3 @@ pro_annotations <- lapply(pros, get_pro_anno)
 names(pro_annotations) <- pros
 
 source("4_calculate.R")
-source("ROC.R")

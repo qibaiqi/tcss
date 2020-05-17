@@ -4,7 +4,9 @@ setwd("D:/study/Yu/2020_stay_at_home/git_tcss/")
 #并整理为children, parents, ancestors, offspring四种，第二份源文件，
 #整理得到term和protein之间的关系，并形成注释，此处得到term的注释
 
+
 #源数据一
+##STEP ONE : 处理源数据一得到父子关系 ： parents
 rr <- readLines("gene_ontology.obo.txt")
 
 #取term所开始的行数
@@ -29,8 +31,8 @@ loca_d <- c(loca_s, length(rr))[-1]
 get_parent <- function(line) {
     if (grepl("is_a:", line) | grepl("relationship:", line)) {
         sub(".*(GO:(\\d+)).*", "\\1", line)
-        }
     }
+}
 
 #get_parents处理[loca_s, loca_d]一个段落(several lines)的信息
 get_parents <- function(start, end) {
@@ -39,27 +41,13 @@ get_parents <- function(start, end) {
 }
 
 #得到每个term的parent terms，数据类型 list
+#length : 33703 是文件中所有的节点
 parents <- mapply(get_parents, loca_s, loca_d)
 names(parents) <- id
 
 
-#parents累加形成ancestors
-#depth_searth是迭代函数，找到parent的parent, children的children
-depth_search <- function(term, pool) {
-    items <- pool[[term]]#该term的parents或children
-    new_items <- unlist(lapply(items, function(e) pool[[e]]))
-    items <- unique(c(new_items, items))#合并并去重
-    if (!is.null(new_items)) {
-        new_items <- unlist(lapply(new_items, depth_search, pool))
-        items <- unique(c(new_items, items))
-        }
-    items <- c(items, term)#包括其本身
-}
 
-ancestors <- lapply(node_bp, depth_search, parents)
-names(ancestors) <- node_bp
-
-
+## STEP TWO : 父子关系的进一步处理，子父关系 : children
 #根据变量parents反向形成children
 #我的想法：将parents展开，形成flip : term---child一一对应
 rep_times <- unname(unlist(lapply(parents, length)))
@@ -73,21 +61,23 @@ get_children <- function(term, pool = flip) {
     unique(part_pool$child)
 }
 
+#得到每个term的child terms，数据类型 list
+#length : 20953 是所有节点中属于BP的节点
 children <- lapply(node_bp, get_children)
 names(children) <- node_bp
 
-#children的所有children...迭代得到 offspring
-offspring <- lapply(node_bp, depth_search, children)
-names(offspring) <- node_bp
 
+
+##STEP THREE : 处理源数据二，得到注释信息 ： final_annotations
 #源数据二
 #term与gene的关联信息文件
+#此为酵母蛋白注释信息
 # ff <- readLines("gene_association.sgd")
 # ff <- ff[-c(1:28)]## 去掉前几行介绍信息
 # ff <- strsplit(ff, split = "\t")
 # ff <- t(as.data.frame(ff))## 变成了matrix
 # #文件第二列是gene id, 第五列是对应的 term id
-# gene_term <- data.frame(gene = ff[, 2], term = ff[, 5], stringsAsFactors = F)
+# pro_term <- data.frame(pro = ff[, 2], term = ff[, 5], stringsAsFactors = F)
 
 #此为人类蛋白注释信息，为方便后面的ROC
 dd <- readLines("gene_association.goa_human")
@@ -106,6 +96,36 @@ get_anno <- function(term, pro_terms = pro_term) {
     unique(part_pro_terms$pro)
 }
 
+
+
+##STEP FOUR : 父子关系的进一步处理，祖先关系 ： ancestors, offspring
+#depth_searth是迭代函数，找到parent的parent, children的children
+depth_search <- function(term, pool) {
+    items <- pool[[term]]#该term的parents或children
+    new_items <- unlist(lapply(items, function(e) pool[[e]]))
+    items <- unique(c(new_items, items))#合并并去重
+    if (!is.null(new_items)) {
+        new_items <- unlist(lapply(new_items, depth_search, pool))
+        items <- unique(c(new_items, items))
+    }
+    items <- c(items, term)#包括其本身
+}
+
+
+#发现按照作者的理解属于bp的node有所不同！博客详解
+node_bp <- depth_search("GO:0008150", children)
+
+#parents累加形成ancestors
+ancestors <- lapply(node_bp, depth_search, parents)
+names(ancestors) <- node_bp
+
+#children的所有children...迭代得到 offspring
+offspring <- lapply(node_bp, depth_search, children)
+names(offspring) <- node_bp
+
+
+
+##STEP FIVE : 统计注释信息为空的节点，并全部删除
 #初始的annotations，每个term对应的gene列表
 init_annotations <- lapply(node_bp, get_anno)
 names(init_annotations) <- node_bp
@@ -123,13 +143,15 @@ anno_add <- function(term, offs = offspring, annotations = init_annotations) {
 final_annotations <- lapply(node_bp, anno_add)
 names(final_annotations) <- node_bp
 
-#从parents,children,ancestor,offspring,final_annotations
-#中去掉注释为空的的term, delete
+#从ancestor,offspring,final_annotations中
+#去掉注释为空的的term, delete
+#这三个主要数据的 length : 8899 是BProot节点“GO:0008150"后代的数量
 
-#final_annotations
+#统计注释为空的节点
 dele_loca <- which(lapply(final_annotations, length) == 0)
 node_remove <- node_bp[dele_loca]
 
+#final_annotations
 final_annotations <- final_annotations[-dele_loca]
 
 
@@ -138,10 +160,6 @@ final_annotations <- final_annotations[-dele_loca]
 delete_inside <- function(term_set, remove = node_remove) {
     term_set <- setdiff(term_set, remove)
 }
-
-#children
-children <- lapply(children, delete_inside)
-children[node_remove] <- NULL
 
 #ancestors
 ancestors <- lapply(ancestors, delete_inside)

@@ -51,9 +51,14 @@ calculate_terms <- function(term1, term2,
     }else {
         clus1_list <- unlist(subset(cluster, id == term1)$clusid)
         clus2_list <- unlist(subset(cluster, id == term2)$clusid)
-        value <- lapply(clus1_list, function(e)
-                    lapply(clus2_list, get_lca, e, term1, term2))
-        return(max(unlist(value)))
+        value <- unlist(lapply(clus1_list, function(e){
+            lapply(clus2_list, get_lca, e, term1, term2)
+        }))
+        if (is.null(value)) {
+            return(NULL)
+        }else {
+            return(max(value))
+            }
         }
 }
 
@@ -68,8 +73,15 @@ protcss <- function(pro1, pro2,
     }else {
         term1_list <- pro_anno[[pro1]]
         term2_list <- pro_anno[[pro2]]
-        value <- lapply(term1_list, function(e)
-                    lapply(term2_list, calculate_terms, e))
-        return(max(unlist(value)))
-  }
+        value <- unlist(lapply(term1_list, function(e){
+            lapply(term2_list, calculate_terms, e)
+        }))
+        if (is.null(value)) {
+            return(NULL)
+        }else {
+            return(max(value))
+            }
+        }
 }
+
+source("5_roc.R")
