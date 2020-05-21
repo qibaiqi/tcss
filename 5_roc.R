@@ -6,21 +6,13 @@
 #已经确定为PPI的数据
 #positive_set
 #每一行是一对PPI，分别取第一个蛋白和第二个蛋白
-r <- readLines("positives.human.iea_yes.p")
-first_pro <- lapply(r, function(e) strsplit(e, ",")[[1]][1])
-second_pro <- lapply(r, function(e) strsplit(e, ",")[[1]][2])
-p_set <- data.frame("first_pro" = unlist(first_pro),
-                    "second_pro" = unlist(second_pro),
-                    stringsAsFactors = FALSE)
+p_set <- read.table("positives.human.iea_yes.p", sep = ",", stringsAsFactors = F)
+names(p_set) <- c("first_pro", "second_pro")
 
 #源文件四
 #negative_set
-r <- readLines("negatives.human.iea_yes.p")
-first_pro <- lapply(r, function(e) strsplit(e, ",")[[1]][1])
-second_pro <- lapply(r, function(e) strsplit(e, ",")[[1]][2])
-n_set <- data.frame("first_pro" = unlist(first_pro),
-                    "second_pro" = unlist(second_pro),
-                    stringsAsFactors = FALSE)
+n_set <- read.table("negatives.human.iea_yes.p", sep = ",", stringsAsFactors = F)
+names(n_set) <- c("first_pro", "second_pro")
 
 #add lable
 label_pro <- c(rep("Yes", times = 1435), rep("No", times = 1435))#加标签
