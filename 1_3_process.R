@@ -23,6 +23,7 @@ names(offspring) <- total_node$id
 
 
 #annotations信息的合并
+
 #父节点的注释信息等于
 #其本身的注释信息及其所有后代节点的注释信息的总和
 anno_add <- function(term, offs = offspring, annotations = init_annotations) {
@@ -42,12 +43,24 @@ root_node <- c("GO:0008150", "GO:0003674", "GO:0005575")
 
 #作者认为根节点的所有后代节点为ont的所有节点
 #三个ont的放在一起
-ont_node <- unlist(lapply(root_node, depth_search, children))
+ont_node <- lapply(root_node, depth_search, children)
 
 
 #从ont_node中留下final_annotations不为空的节点
 node_with_anno <- which(lapply(final_annotations, length) != 0)
-all_node <- intersect(ont_node, total_node$id[node_with_anno])
+ont_node <- lapply(ont_node, intersect, total_node$id[node_with_anno])
+names(ont_node) <- c("b", "m", "c")
+
+
+
+all_node <- unlist(ont_node)
+
+#迭代得到ancestors, offspring后，在其内部信息也要过滤一遍
+get_anc_off <- function(term, pool, nodes = all_node) {
+    content <- depth_search(term, pool)
+    #与有注释的节点做交集
+    intersect(content, nodes)
+}
 
 
 #go_graph包含所有term的ont, ancestors, offspring, annotations信息
@@ -55,10 +68,8 @@ go_graph <- data.frame(term = all_node,
                        ont = unlist(lapply(all_node, function(e) {
                            total_node[total_node$id == e, ]$ont
                        })),
-                       ancestors = I(lapply(all_node,
-                           depth_search, parents)),
-                       offspring = I(lapply(all_node,
-                           depth_search, children)),
+                       ancestors = I(lapply(all_node, get_anc_off, parents)),
+                       offspring = I(lapply(all_node, get_anc_off, children)),
                        annotations = I(lapply(all_node, function(e) {
                            final_annotations[[e]]
                        })),
@@ -73,7 +84,7 @@ go_graph <- data.frame(term = all_node,
 
 #pro_annnotations
 #所有的proteins
-pros <- unique(pro_term$pro)
+all_pro <- unique(pro_term$pro)
 
 #对term列表去冗余：去掉内部的父子关系(offspring)
 #判断该term在term_list中是否有父子关系
@@ -105,10 +116,11 @@ get_pro_anno <- function(pro, ont, graph = go_graph, pro_terms = pro_term) {
 
 
 #共三列:protein, ontology, annotations
-pro_annotations <- data.frame(pro = rep(pros, 3),
-                              ont = rep(c("b", "m", "c"), length(pros)),
+pro_annotations <- data.frame(pro = rep(all_pro, each = 3),
+                              ont = rep(c("b", "m", "c"), length(all_pro)),
                               stringsAsFactors = F)
 
 pro_annotations$anno <- mapply(get_pro_anno,
                               pro_annotations$pro,
                               pro_annotations$ont)
+source("2_1_clustering.R")

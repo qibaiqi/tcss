@@ -1,5 +1,5 @@
 setwd("D:/study/Yu/2020_stay_at_home/git_tcss/")
-
+options(stringsAsFactors = F)
 #处理源文件一，得到GO数据库节点之间的父子关系
 #得到两个数据 parents children
 
@@ -64,3 +64,5 @@ children <- lapply(total_node$id, function(e) {
 })
 
 names(children) <- total_node$id
+
+names(parents) <- total_node$id
