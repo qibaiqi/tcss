@@ -2,29 +2,6 @@
 #定义在集合的影响下的terms，proteins的语义相似性计算函数
 
 
-#get_clus_ancestors将每个term的ancestors限制在每个cluster内部
-#即每个cluster的所有节点与该term的ancestors做交集
-#结果表示每个term在所属的cluster内部的ancestors
-get_clus_ancestors <- function(clusid,
-                               term,
-                               m_graph = meta_graph,
-                               g_graph = go_graph) {
-    #cluster内部的所有节点
-    clu <- m_graph[m_graph$id == clusid, ]$terms
-    #该term的祖先节点
-    if (identical(term, "meta")) {
-      anc <- m_graph[m_graph$id == "meta", ]$terms
-    } else {
-      anc <- g_graph[g_graph$term == term, ]$ancestors 
-    }
-    #做交集
-    intersect(unlist(anc), unlist(clu))
-}
-
-
-
-
-
 
 #get_clus_ancestors将每个term的ancestors限制在每个cluster内部
 #即每个cluster的所有节点与该term的ancestors做交集
@@ -44,16 +21,12 @@ get_clus_ancestors <- function(clusid,
 
 
 
-
-
-
-
 #取该term在所属的cluster(clust)下的ica值
 get_com_anc_ica <- function(term, clust_id, cluster = term_cluster) {
     content <- cluster[cluster$term == term, ]
     #取对应的location
     loca <- which(unlist(content$clusid) == clust_id)
-    value <- unlist(content$ica)[loca]
+    unlist(content$ica)[loca]
 }
 
 
