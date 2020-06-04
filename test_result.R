@@ -39,12 +39,14 @@ tt <- strsplit(tt, split = "\t")
 
 
 get_author_value <- function(line) {
-  if (length(line) == 0) {
-    return(NULL)
-  }else if (grepl("Biological", line)) {
-    value <- as.numeric(sub("\\D+", "\\1", line))
-    return(value)
-  }
+    if (length(line) == 0) {
+        return(NULL)
+    }else if (grepl("Biological", line) |
+              grepl("Molecular", line) |
+              grepl("Cellular", line)) {
+        value <- as.numeric(sub("\\D+", "\\1", line))
+        return(value)
+    }
 }
 
 author_result <- unlist(lapply(tt, get_author_value))
@@ -52,7 +54,9 @@ author_result <- round(author_result, 8)
 
 #我的结果
 #cutoff须保持一致
-my_result <- mapply(protcss, test_sets$first_pro, test_sets$second_pro)
+my_result <- mapply(protcss, test_sets$first_pro, test_sets$second_pro, "b")
+#my_result <- mapply(protcss, test_sets$first_pro, test_sets$second_pro, "m")
+#my_result <- mapply(protcss, test_sets$first_pro, test_sets$second_pro, "c")
 my_result <- lapply(my_result, function(e) if (is.null(e)) NA else e)
 my_result <- unlist(my_result)
 my_result <- round(my_result, 8)
