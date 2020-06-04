@@ -59,7 +59,11 @@ get_clus_ica <- function(term, m_graph = meta_graph, cluster = term_cluster) {
     content2 <- m_graph[m_graph$ont == ont, ]
     clus_max_icas <- content2[charmatch(clus_list, content2$id), ]$max_ica
     #修正ica
-    clus_ica <- unlist(lapply(clus_max_icas, function(e) own_ica / e))
+    clus_ica <- unlist(lapply(clus_max_icas, function(e)
+        if (e != 0 ) {
+            own_ica / e
+        } else 0 ))
+    return(clus_ica)
 }
 
 
