@@ -52,8 +52,9 @@ ont_node <- lapply(ont_node, intersect, total_node$id[node_with_anno])
 names(ont_node) <- c("b", "m", "c")
 
 
-
 all_node <- unlist(ont_node)
+
+
 
 #迭代得到ancestors, offspring后，在其内部信息也要过滤一遍
 get_anc_off <- function(term, pool, nodes = all_node) {
@@ -74,53 +75,3 @@ go_graph <- data.frame(term = all_node,
                            final_annotations[[e]]
                        })),
                        stringsAsFactors = F)
-
-
-
-
-
-
-
-
-#pro_annnotations
-#所有的proteins
-all_pro <- unique(pro_term$pro)
-
-#对term列表去冗余：去掉内部的父子关系(offspring)
-#判断该term在term_list中是否有父子关系
-pro_remove_redun <- function(term, ont, term_list, graph = go_graph) {
-    #先去掉其本身
-    term_list <- setdiff(term_list, term)
-    #该term的后代节点
-    offs <- graph[graph$ont == ont & graph$term == term, ]$offspring
-    #做交集
-    result <- intersect(unlist(offs), term_list)
-    #为空则表明没有，可留下该term
-    if (length(result) == 0) {
-        return(term)
-    }
-}
-
-
-
-#从变量pro_term中提取出每一个pro的注释信息:term列表
-#从不同的ontology提取到的结果不同，所以表明ont
-get_pro_anno <- function(pro, ont, graph = go_graph, pro_terms = pro_term) {
-    #从pro_term中提取
-    term_list <- pro_terms[pro_terms$pro == pro, ]$term
-    #与该ont的节点做交集
-    term_list <- intersect(term_list, graph[graph$ont == ont, ]$term)
-    #去冗余
-    term_list <- unlist(lapply(term_list, pro_remove_redun, ont, term_list))
-}
-
-
-#共三列:protein, ontology, annotations
-pro_annotations <- data.frame(pro = rep(all_pro, each = 3),
-                              ont = rep(c("b", "m", "c"), length(all_pro)),
-                              stringsAsFactors = F)
-
-pro_annotations$anno <- mapply(get_pro_anno,
-                              pro_annotations$pro,
-                              pro_annotations$ont)
-source("2_1_clustering.R")
