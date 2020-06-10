@@ -12,8 +12,8 @@ get_clus_ancestors <- function(clusid,
                                g_graph = go_graph) {
   #cluster内部的所有节点
   clu <- m_graph[m_graph$id == clusid, ]$terms
-  anc <- g_graph[g_graph$term == term, ]$ancestors 
-  
+  anc <- g_graph[g_graph$term == term, ]$ancestors
+
   #做交集
   intersect(unlist(anc), unlist(clu))
 }
@@ -49,7 +49,7 @@ get_lca <- function(clus1, clus2, term1, term2) {
       #若来自不同cluster
       anc1 <- get_clus_ancestors("meta", clus1)
       anc2 <- get_clus_ancestors("meta", clus2)
-      #找其在meta分支下的共同祖先，等同于原本本身的共同祖先
+      #找其meta分支下的共同祖先，等同原本身的共同祖先
       common_anc <- intersect(anc1, anc2)
       value <- lapply(common_anc, get_com_anc_ica, "meta")
       value <- max(unlist(value))
@@ -69,14 +69,14 @@ calculate_terms <- function(term1, term2,
         return(NULL)
     } else {
         #取各自的clusters
-        clus1_list <- unlist(subset(cluster, term == term1)$clusid)
-        clus2_list <- unlist(subset(cluster, term == term2)$clusid)
-    
+        clus1_list <- unlist(cluster[cluster$term == term1, ]$clusid)
+        clus2_list <- unlist(cluster[cluster$term == term2, ]$clusid)
+
         #不同的cluster下计算
-        value <- sapply(clus1_list, function(e){
+        value <- sapply(clus1_list, function(e) {
             sapply(clus2_list, get_lca, e, term1, term2)
         })
-    
+
       if (is.null(unlist(value))) {
           return(NULL)
       }else {
@@ -100,13 +100,13 @@ protcss <- function(pro1, pro2, ont = "b",
         term1_list <- unlist(content1$anno)
         content2 <- p_anno[p_anno$ont == ont & p_anno$pro == pro2, ]
         term2_list <- unlist(content2$anno)
-    
+
         #两组terms遍历计算
-        value <- sapply(term1_list, function(e){
+        value <- sapply(term1_list, function(e) {
             sapply(term2_list, calculate_terms, e, method = method)
       })
     }
-  
+
     if (is.null(unlist(value))) {
         NULL
     }else {

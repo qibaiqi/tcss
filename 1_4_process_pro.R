@@ -27,14 +27,15 @@ pro_remove_redun <- function(term, ont, term_list, graph = go_graph) {
 
 #从变量pro_term中提取出每一个pro的注释信息:term列表
 #从不同的ontology提取到的结果不同，所以表明ont
-get_pro_anno <- function(pro, ont, graph = go_graph, pro_terms = pro_term) {
+get_pro_anno <- function(pro, ont, g_graph = go_graph, pro_terms = pro_term) {
   #从pro_term中提取
-  term_list <- pro_terms[pro_terms$pro == pro, ]$term
+  terms <- pro_term[pro_term$pro == pro1, ][, "term"]
   #与该ont的节点做交集
-  term_list <- intersect(term_list, graph[graph$ont == ont, ]$term)
+  term_list <- intersect(terms, g_graph[g_graph$ont == ont, ][, "term"])
   #去冗余
-  term_list <- unlist(lapply(term_list, pro_remove_redun, ont, term_list))
+  unlist(lapply(term_list, pro_remove_redun, ont, term_list))
 }
+
 
 
 #共三列:protein, ontology, annotations

@@ -8,15 +8,15 @@ get_ica <- function(term, g_graph = go_graph, root_nodes = root_node) {
     #该term的ont
     ont <- content1$ont
     #该term的对应蛋白数目
-    len1 <- length(unlist(content1$annotations))
+    len1 <- length(unlist(content1[["annotations"]]))
     #取各个ont的根节点的蛋白信息
-    content2 <- g_graph[charmatch(root_nodes, g_graph$term),]$annotations
+    content2 <- g_graph[charmatch(root_nodes, g_graph$term), ][["annotations"]]
     #取各个ont的的的蛋白数目
     len2 <- switch(ont,
                    "b" = length(unlist(content2[1])),
                    "m" = length(unlist(content2[2])),
                    "c" = length(unlist(content2[3])))
-  
+
   - log10(len1 / len2)
 }
 
@@ -54,15 +54,15 @@ get_clus_ica <- function(term, m_graph = meta_graph, cluster = term_cluster) {
     ont <- content1$ont
     clus_list <- unlist(content1$clusid)
     own_ica <- get_ica(term)
-  
+
     #所属clusters的各自max_ica
     content2 <- m_graph[m_graph$ont == ont, ]
     clus_max_icas <- content2[charmatch(clus_list, content2$id), ]$max_ica
     #修正ica
     clus_ica <- unlist(lapply(clus_max_icas, function(e)
-        if (e != 0 ) {
+        if (e != 0) {
             own_ica / e
-        } else 0 ))
+        } else 0))
     return(clus_ica)
 }
 

@@ -1,5 +1,6 @@
 #all the nodes will cluster into different graphs according to the cutoff
-#本文件旨在根据每个term的ict值将所有的term分类，进而根据父子关系形成不同的集合
+#本文件旨在根据每个term的ict值将所有的term分类
+#进而根据父子关系形成不同的集合
 
 
 
@@ -22,16 +23,17 @@ nodes_cutoff <- mapply(function(e, d) {
 }, c("b", "m", "c"), c(3.2, 3.6, 3.0))
 
 
-#在nodes_cutoff中是否存在某节点与其父节点们有过于的close情况(ict比值小于1.2)
-close_proximity <- function(terms, par = parents, graph = go_graph) {
+#nodes_cutoff中存在某节点与其父节点们有过于close情况
+#(ict比值小于1.2)
+close_proximity <- function(terms, par = parents, g_graph = go_graph) {
     #事先预存好所有的节点
     all_ <- terms
     for (term1 in terms) {
         #父节点
         obj <- intersect(par[[term1]], all_)
         for (term2 in obj) {
-            ict1 <- graph[graph$term == term1, ]$ict
-            ict2 <- graph[graph$term == term2, ]$ict
+            ict1 <- g_graph[g_graph[["term"]] == term1, ]$ict
+            ict2 <- g_graph[g_graph[["term"]] == term2, ]$ict
             #判断
             if (ict2 != 0 & ict1 / ict2 <= 1.2) {
                 #存在此情况即删除
@@ -54,7 +56,7 @@ sub_root_nodes <- unlist(unname(meta_terms))
 #以每个term的offspring作为meta_terms的内容，组成sub-graph
 #每个sub-graph去掉来自其他sub-graph的信息：后代节点
 remove_dup <- function(id, g_graph = go_graph, meta_term = sub_root_nodes) {
-    content <- g_graph[g_graph$term == id, ]
+    content <- g_graph[g_graph[["term"]] == id, ]
     #该节点的所有后代
     offs <- unlist(content$offspring)
     #其他的sub-root-nodes
@@ -62,7 +64,7 @@ remove_dup <- function(id, g_graph = go_graph, meta_term = sub_root_nodes) {
     #去掉本身
     other_sub <- setdiff(other_sub, id)
     #其他sub-root-nodes的后代
-    loca <- charmatch(other_sub, g_graph$term)
+    loca <- charmatch(other_sub, g_graph[["term"]])
     other_sub_offs <- unlist(g_graph[loca, ]$offspring)
     #去掉
     unlist(setdiff(offs, other_sub_offs))
